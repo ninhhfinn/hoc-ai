@@ -452,10 +452,23 @@ LOG_LEVEL=INFO
 
 - [ ] **Step 6: Xác nhận `.env.example` không bị `.gitignore` chặn**
 
-Run: `git check-ignore -v .env.example; echo "exit=$?"`
+Run: `git check-ignore .env.example; echo "exit=$?"`
 Expected: `exit=1` (nghĩa là **không** bị chặn — đúng ý)
 
 Nếu ra `exit=0` thì `.gitignore` đang chặn nhầm, kiểm tra lại dòng `!.env.example`.
+
+**Chú ý — đừng thêm cờ `-v` vào lệnh này.** Với một file chưa commit khớp pattern phủ định
+(`!.env.example`), `git check-ignore -v` in ra pattern đó và trả về **exit 0**, dù file thật
+sự *không* bị chặn. Không có `-v` thì mã thoát mới phản ánh đúng "có bị chặn hay không".
+Kiểm chứng trên git 2.53:
+
+```
+git check-ignore -v .env.example   ->  .gitignore:2:!.env.example   .env.example   exit=0
+git check-ignore    .env.example   ->  (khong in gi)                              exit=1
+```
+
+Đây là một ví dụ đúng nghĩa cho Mục 7 của bài học: mã thoát là hợp đồng, và một cờ tưởng
+như chỉ để "in chi tiết hơn" lại đổi luôn hợp đồng đó.
 
 - [ ] **Step 7: Commit**
 
