@@ -706,12 +706,21 @@ Expected: PASS — `11 passed`
 
 - [ ] **Step 5: Viết test cho điểm vào dòng lệnh**
 
-Thêm vào cuối `tests/unit/test_doctor.py`:
+Làm hai việc trong `tests/unit/test_doctor.py`.
+
+**Việc 1 — thêm dòng import vào khối import ở ĐẦU file**, ngay trên `from app.core.doctor import (`:
 
 ```python
 from app.__main__ import main
+```
 
+Đặt ở đầu file chứ không phải giữa file. Python cho phép `import` ở bất cứ đâu, nhưng quy ước
+là gom hết lên đầu, và ruff sẽ báo lỗi `E402 module level import not at top of file` nếu
+không — Task 5 sẽ bật ruff và bắt được ngay.
 
+**Việc 2 — thêm hai hàm test vào cuối file:**
+
+```python
 def test_main_lenh_doctor_tra_ve_0_khi_moi_thu_dat(capsys):
     ma_thoat = main(["doctor"])
     captured = capsys.readouterr()
@@ -731,6 +740,10 @@ def test_main_khong_co_lenh_thi_thoat_voi_loi(capsys):
 
 Run: `uv run pytest tests/unit/test_doctor.py -v`
 Expected: FAIL với `ModuleNotFoundError: No module named 'app.__main__'`
+
+Vì import nằm ở đầu file, đây là **lỗi thu thập test** (collection error) — pytest không chạy
+được file nào cả, kể cả 11 test đã xanh trước đó. Đó là màu đỏ đúng: module chưa tồn tại thì
+cả file không import nổi.
 
 - [ ] **Step 7: Viết `app/__main__.py`**
 
