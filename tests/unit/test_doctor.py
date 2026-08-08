@@ -4,6 +4,7 @@ Cac ham kiem tra nhan tham so thay vi tu doc trang thai he thong, nen test
 duoc ca truong hop Python 3.14 ma khong can cai Python 3.14.
 """
 
+from app.__main__ import main
 from app.core.doctor import (
     BaoCao,
     KetQua,
@@ -86,9 +87,6 @@ def test_cau_hinh_hong_thi_bao_cao_chu_khong_nem_loi(monkeypatch):
     assert cau_hinh.dat is False
     assert "DEEPSEEK_API_KEY" in cau_hinh.chi_tiet
     assert bc.tat_ca_dat() is False
-
-
-from app.__main__ import main
 
 
 def test_main_lenh_doctor_tra_ve_0_khi_moi_thu_dat(capsys):
