@@ -16,8 +16,11 @@ gì cả**.
 Sự khác biệt nằm ở hai công việc rất khác nhau:
 
 - **ML Researcher** (nhà nghiên cứu Machine Learning) tạo ra model mới: thu thập dữ liệu khổng
-  lồ, thiết kế kiến trúc mạng nơ-ron, rồi *train* — tức là chạy hàng triệu vòng lặp để chỉnh
-  từng trọng số (weight) của model sao cho nó dự đoán đúng hơn. Đây là công việc cực kỳ tốn
+  lồ, thiết kế kiến trúc mạng nơ-ron, rồi *train* — tức là chạy hàng triệu vòng lặp, mỗi vòng
+  tính **gradient** (đạo hàm — con số cho biết phải chỉnh mỗi trọng số theo hướng nào và nhiều
+  hay ít để giảm sai số), thông qua một lượt gọi là **backward pass** (chạy ngược từ đầu ra về
+  đầu vào, xuyên qua toàn bộ mạng, để tính ra gradient đó), rồi chỉnh từng trọng số (weight) của
+  model theo hướng gradient chỉ ra, sao cho nó dự đoán đúng hơn. Đây là công việc cực kỳ tốn
   tài nguyên.
 - **AI Engineer** (kỹ sư AI — đúng vị trí JD đang nhắm tới) hầu như không train model từ đầu.
   Công việc là *dùng* model đã được ai đó train sẵn (OpenAI, DeepSeek, Meta, Qwen...), rồi ghép
@@ -72,9 +75,9 @@ Câu hỏi đặt ra là: làm sao để model trả lời được câu hỏi d
 Có hai con đường:
 
 **Con đường 1 — Train lại (hoặc fine-tune, tức train tiếp trên dữ liệu mới):** đưa toàn bộ tài
-liệu của bạn vào làm dữ liệu train, chạy lại quá trình cập nhật trọng số. Như Mục 1 vừa tính,
-train một model 7B cần ~112GB VRAM — phần cứng hàng chục nghìn đô, hàng nghìn đô chi phí thuê
-GPU cloud nếu không có máy đó, và mất vài tuần chuẩn bị dữ liệu, chạy, kiểm tra.
+liệu của bạn vào làm dữ liệu train, chạy lại quá trình cập nhật trọng số. Train lại một model
+7B cần ~112GB VRAM — phần cứng hàng chục nghìn đô, hàng nghìn đô chi phí thuê GPU cloud nếu
+không có máy đó, và mất vài tuần chuẩn bị dữ liệu, chạy, kiểm tra.
 
 **Con đường 2 — RAG (Retrieval-Augmented Generation — sinh câu trả lời có tăng cường truy
 xuất):** không đụng đến một trọng số nào của model. Thay vào đó: tìm đoạn tài liệu liên quan
@@ -104,11 +107,12 @@ thuộc, nhưng nó *đọc được* tài liệu đó ngay tại thời điểm
 nó biết.
 
 RAG cũng có giới hạn: chất lượng câu trả lời phụ thuộc vào việc tìm đúng đoạn liên quan (nếu
-tìm sai đoạn, model vẫn trả lời trôi chảy nhưng dựa trên thông tin sai — đây chính là vấn đề
-Mục 5 sẽ nói tới), và tổng độ dài đoạn dán vào prompt bị giới hạn bởi context window (cửa sổ
-ngữ cảnh) của model. Nhưng so với chi phí và thời gian của việc train lại, RAG gần như luôn là
-lựa chọn hợp lý hơn cho bài toán "dạy model thứ nó chưa biết mà không cần train" — và đó chính
-xác là bài toán của dự án này: một app hỏi đáp dựa trên tài liệu do chính bạn nạp vào.
+tìm sai đoạn, model vẫn trả lời trôi chảy nhưng dựa trên thông tin sai — đây chính là rủi ro
+của RAG khi retrieval sai, không phải lỗi hiển nhiên như một phép tính sai), và tổng độ dài
+đoạn dán vào prompt bị giới hạn bởi context window (cửa sổ ngữ cảnh) của model. Nhưng so với
+chi phí và thời gian của việc train lại, RAG gần như luôn là lựa chọn hợp lý hơn cho bài toán
+"dạy model thứ nó chưa biết mà không cần train" — và đó chính xác là bài toán của dự án này:
+một app hỏi đáp dựa trên tài liệu do chính bạn nạp vào.
 
 ## Vì sao phải ghim phiên bản Python
 
@@ -209,8 +213,10 @@ vẻ hợp lý.
 
 **Lý do 3 — CI xanh là bằng chứng nhà tuyển dụng nhìn thấy.** Một repo GitHub có dấu tick xanh
 (build đang chạy tốt) trên mỗi commit là tín hiệu trực quan, không cần đọc code, cho thấy người
-viết có kỷ luật kỹ thuật. Đây là bằng chứng kiểm chứng được — đúng thứ mục tiêu dự án này nhắm
-tới (xem lại mục tiêu: "có bằng chứng kiểm chứng được").
+viết có kỷ luật kỹ thuật. Đây là loại bằng chứng kiểm chứng được mà một dự án học để đi xin
+việc thực sự cần: thay vì chỉ nói miệng "tôi đã học RAG", một repo có CI xanh chứng minh điều
+đó bằng kết quả khách quan (build chạy được, test qua) mà bất kỳ ai cũng bấm vào xem và kiểm
+chứng lại được, kể cả người không đọc chi tiết code.
 
 Cách viết test trước đi theo một vòng lặp ba bước, gọi là **đỏ → xanh → refactor**:
 
@@ -237,9 +243,11 @@ Không commit thẳng lên `main` vì `main` được xem là dòng code "luôn 
 đó khi đang thử nghiệm dở dang, một lần lỡ tay có thể để lại code hỏng ngay tại điểm mà mọi
 người (và CI) coi là chuẩn.
 
-**Nhánh (branch)** là một con trỏ di động chỉ vào một chuỗi commit — bạn có thể tạo một nhánh
-mới xuất phát từ `main`, commit thoải mái trên đó mà không ảnh hưởng gì đến `main`, rồi khi
-xong mới gộp (merge) ngược lại:
+**Nhánh (branch)** là một con trỏ di động, luôn trỏ vào commit mới nhất (tip — đầu mút) của một
+chuỗi commit; các commit phía sau được lần ngược ra nhờ liên kết cha-con giữa chúng, chứ không
+phải vì nhánh "ôm" cả chuỗi commit đó bên trong nó. Bạn có thể tạo một nhánh mới xuất phát từ
+`main`, commit thoải mái trên đó mà không ảnh hưởng gì đến `main`, rồi khi xong mới gộp (merge)
+ngược lại:
 
 ```
 main     ──●───────────────●────────────●──────→
@@ -334,8 +342,8 @@ hành: `0` là thành công, khác `0` là thất bại. `echo $?` ngay sau mộ
 nó. Đây là cơ chế CI dùng để biết build "xanh" hay "đỏ": mỗi bước (lint, test...) chỉ là chạy
 một lệnh rồi kiểm tra mã thoát — `0` thì qua, khác `0` thì dừng và báo đỏ. Đây cũng là lý do
 hàm `main` ở Task 4 phải trả về kiểu `int` chứ không phải `None`: giá trị đó được đưa thẳng vào
-`sys.exit()` và trở thành mã thoát của cả chương trình khi chạy từ dòng lệnh — đúng cơ chế
-`0`/khác-`0` vừa nói, không phải quy ước tuỳ tiện.
+`sys.exit()` và trở thành mã thoát của cả chương trình khi chạy từ dòng lệnh — `0` vẫn là thành
+công, khác `0` vẫn là thất bại, không phải một quy ước riêng của hàm `main`.
 
 Cuối cùng, thói quen đọc log — thứ JD gọi thẳng là "đọc log" — gói gọn trong ba bước:
 
