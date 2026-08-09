@@ -106,3 +106,12 @@ def test_main_khong_co_lenh_thi_thoat_voi_loi(capsys):
     with pytest.raises(SystemExit) as e:
         main([])
     assert e.value.code != 0
+
+
+def test_main_lenh_version_in_so_phien_ban(capsys):
+    from app import __version__
+
+    ma_thoat = main(["version"])
+    captured = capsys.readouterr()
+    assert __version__ in captured.out
+    assert ma_thoat == 0
