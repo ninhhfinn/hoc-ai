@@ -23,7 +23,7 @@ jobs:
       - name: Cai phu thuoc dung uv.lock
         run: uv sync --locked
 
-      - name: Lint
+      - name: Lint (soi loi code)
         run: uv run ruff check .
 
       - name: Kiem tra dinh dang
