@@ -214,6 +214,7 @@ addopts = "-v --strict-markers"
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+exclude = ["docs"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
@@ -226,6 +227,12 @@ files = ["app"]
 
 Ghi chú: `files = ["app"]` nghĩa là mypy chỉ kiểm tra code chính, không kiểm tra test. Cố ý —
 để không phải chú thích kiểu cho từng hàm test khi mới bắt đầu.
+
+Ghi chú: `exclude = ["docs"]` chặn ruff đụng vào thư mục tài liệu. Từ bản 0.14 trở đi,
+`ruff format` **cũng định dạng lại code Python nằm trong khối ``` của file Markdown**. Không
+loại trừ thì mỗi lần sửa một chữ trong bài học có kèm code block, `ruff format --check .` ở CI
+sẽ đỏ vì lý do thẩm mỹ không liên quan đến app — và phần comment căn lề cố ý trong spec bị phá.
+Code trong `docs/` là minh hoạ để đọc, không phải code chạy; nó không thuộc phạm vi của linter.
 
 - [ ] **Step 3: Tạo thư mục và file rỗng cho package**
 
@@ -917,7 +924,7 @@ repos:
       - id: detect-private-key
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.6
+    rev: v0.16.2
     hooks:
       - id: ruff
         args: [--fix]
@@ -934,6 +941,12 @@ repos:
 
 Ghi chú: mypy **không** đặt trong pre-commit vì nó chạy trong môi trường cô lập riêng và hay
 báo lỗi giả về phụ thuộc. Mypy chạy ở CI (Task 6) và chạy tay bằng `uv run mypy`.
+
+Ghi chú về `rev: v0.16.2` — con số này phải **khớp với phiên bản ruff mà `uv` đã cài** (xem
+`uv.lock`, hoặc chạy `uv run ruff --version`). Pre-commit tự tải ruff riêng của nó, không dùng
+bản trong `.venv`. Hai bản lệch nhau sẽ đẻ ra loại lỗi khó chịu nhất với người mới: *commit ở
+máy thì qua, đẩy lên CI thì đỏ* — vì CI chạy `uv run ruff format --check .` bằng bản khác.
+Khi nào nâng ruff trong `pyproject.toml` thì nhớ sửa luôn dòng `rev` này.
 
 - [ ] **Step 5: Cài hook**
 
@@ -957,19 +970,27 @@ Lần đầu có thể sửa khoảng trắng thừa và dòng cuối file. Nế
 Tạo file giả và cố tình commit:
 
 ```bash
-printf -- "-----BEGIN RSA PRIVATE KEY-----\ngiadinhthoi\n" > /tmp/khoa-gia.pem
-cp /tmp/khoa-gia.pem ./khoa-gia.pem
+DAU="-----BEGIN RSA"
+printf -- "%s PRIVATE KEY-----\ngiadinhthoi\n" "$DAU" > khoa-gia.pem
 git add khoa-gia.pem
 git commit -m "test: thu commit khoa rieng tu"
 ```
 
 Expected: commit **bị chặn**, hook `detect-private-key` báo `Failed`.
 
+**Vì sao phải nối chuỗi bằng biến `DAU` thay vì viết thẳng một dòng?** Vì `detect-private-key`
+quét *nội dung* mọi file được commit, và chính file kế hoạch này cũng là một file được commit.
+Nếu ở đây có nguyên vẹn dòng mở đầu của một khoá RSA, thì mỗi lần sửa file kế hoạch
+là hook lại chặn commit — và cách vá thường thấy là thêm `exclude:` cho file đó, tức là tự đục
+một lỗ trên hàng rào của chính mình. Cắt chuỗi làm hai mảnh thì file kế hoạch sạch, hàng rào
+không có ngoại lệ nào, mà bước kiểm chứng vẫn chạy thật: `printf` ghép lại đủ chuỗi vào
+`khoa-gia.pem`, nên hook vẫn bắt được.
+
 Dọn sạch:
 
 ```bash
 git reset HEAD khoa-gia.pem
-rm khoa-gia.pem /tmp/khoa-gia.pem
+rm khoa-gia.pem
 ```
 
 - [ ] **Step 8: Kiểm chứng hàng rào chặn file `.env` thật sự hoạt động**
