@@ -231,20 +231,18 @@ nhiều việc và cần tách.
 # app/core/models.py
 @dataclass(frozen=True)
 class Chunk:
-    id: str  # ổn định giữa các lần nạp lại (hash nội dung + nguồn)
+    id: str                 # ổn định giữa các lần nạp lại (hash nội dung + nguồn)
     text: str
-    source_id: str  # đường dẫn file hoặc URL
+    source_id: str          # đường dẫn file hoặc URL
     source_title: str
-    ordinal: int  # đoạn thứ mấy trong tài liệu
+    ordinal: int            # đoạn thứ mấy trong tài liệu
     page: int | None
     token_count: int
-
 
 @dataclass(frozen=True)
 class SearchHit:
     chunk: Chunk
-    score: float  # cosine similarity, [-1, 1]
-
+    score: float            # cosine similarity, [-1, 1]
 
 @dataclass(frozen=True)
 class Citation:
@@ -258,9 +256,8 @@ class Citation:
 # app/core/embedding.py
 class Embedder(Protocol):
     dim: int
-
-    def embed_documents(self, texts: list[str]) -> np.ndarray: ...  # (n, dim), đã chuẩn hoá L2
-    def embed_query(self, text: str) -> np.ndarray: ...  # (dim,), đã chuẩn hoá L2
+    def embed_documents(self, texts: list[str]) -> np.ndarray: ...   # (n, dim), đã chuẩn hoá L2
+    def embed_query(self, text: str) -> np.ndarray: ...              # (dim,), đã chuẩn hoá L2
 ```
 
 Vector được chuẩn hoá L2 ngay tại nguồn, nên cosine similarity rút gọn thành tích vô hướng.
@@ -269,9 +266,8 @@ Vector được chuẩn hoá L2 ngay tại nguồn, nên cosine similarity rút 
 # app/core/vectorstore.py
 class VectorStore(Protocol):
     def upsert(self, chunks: list[Chunk], vectors: np.ndarray) -> None: ...
-    def search(
-        self, vector: np.ndarray, k: int, source_filter: list[str] | None = None
-    ) -> list[SearchHit]: ...
+    def search(self, vector: np.ndarray, k: int,
+               source_filter: list[str] | None = None) -> list[SearchHit]: ...
     def delete_by_source(self, source_id: str) -> None: ...
     def count(self) -> int: ...
 ```
@@ -290,18 +286,12 @@ class Completion:
     cost_usd: float
     latency_ms: int
 
-
 class LLMProvider(Protocol):
     name: str
-
-    def complete(
-        self,
-        messages: list[Message],
-        *,
-        temperature: float = 0.0,
-        max_tokens: int | None = None,
-        json_schema: dict | None = None,
-    ) -> Completion: ...
+    def complete(self, messages: list[Message], *,
+                 temperature: float = 0.0,
+                 max_tokens: int | None = None,
+                 json_schema: dict | None = None) -> Completion: ...
     def stream(self, messages: list[Message], **kw) -> Iterator[str]: ...
     def count_tokens(self, text: str) -> int: ...
 ```

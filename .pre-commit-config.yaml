@@ -10,12 +10,9 @@ repos:
       - id: check-added-large-files
         args: ["--maxkb=1000"]
       - id: detect-private-key
-        # loai tru: file ke hoach nay chua chuoi khoa RSA gia dung de minh hoa
-        # buoc kiem thu cua chinh Task 5, khong phai khoa that
-        exclude: ^docs/superpowers/plans/2026-08-08-chang-00-nen-mong\.md$
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.6
+    rev: v0.16.2
     hooks:
       - id: ruff
         args: [--fix]
