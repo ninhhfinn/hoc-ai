@@ -5,9 +5,17 @@ on:
     branches: [main]
   pull_request:
 
+# Repo cong khai nen PR tu fork cung chay workflow nay. Chi cho token quyen
+# doc ma nguon: workflow khong can ghi gi len repo.
+permissions:
+  contents: read
+
 jobs:
   kiem-tra:
     runs-on: ubuntu-latest
+    # Job that chay khoang 20 giay. 15 phut la du du de mot buoc treo mang
+    # bi cat thay vi chay het gio mien phi cua runner.
+    timeout-minutes: 15
     steps:
       - name: Lay ma nguon
         uses: actions/checkout@v4
@@ -22,6 +30,9 @@ jobs:
 
       - name: Cai phu thuoc dung uv.lock
         run: uv sync --locked
+
+      - name: Kiem tra hang rao chan lo khoa
+        run: uv run pre-commit run --all-files
 
       - name: Lint (soi loi code)
         run: uv run ruff check .
