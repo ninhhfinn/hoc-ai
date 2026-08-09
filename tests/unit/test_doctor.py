@@ -42,10 +42,12 @@ def test_kiem_tra_lenh_khong_ton_tai_thi_truot():
 
 
 def test_bao_cao_bo_qua_muc_khong_bat_buoc():
-    bc = BaoCao([
-        KetQua("a", True, "ok", bat_buoc=True),
-        KetQua("b", False, "chua cai", bat_buoc=False),
-    ])
+    bc = BaoCao(
+        [
+            KetQua("a", True, "ok", bat_buoc=True),
+            KetQua("b", False, "chua cai", bat_buoc=False),
+        ]
+    )
     assert bc.tat_ca_dat() is True
 
 
@@ -55,10 +57,12 @@ def test_bao_cao_truot_khi_muc_bat_buoc_truot():
 
 
 def test_dinh_dang_hien_thi_moi_muc_tren_mot_dong():
-    bc = BaoCao([
-        KetQua("a", True, "ok"),
-        KetQua("b", False, "chua cai"),
-    ])
+    bc = BaoCao(
+        [
+            KetQua("a", True, "ok"),
+            KetQua("b", False, "chua cai"),
+        ]
+    )
     dong = bc.dinh_dang().splitlines()
     assert len(dong) == 2
     assert "a" in dong[0]
