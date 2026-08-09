@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  kiem-tra:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lay ma nguon
+        uses: actions/checkout@v4
+
+      - name: Cai uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Cai Python 3.12
+        run: uv python install 3.12
+
+      - name: Cai phu thuoc dung uv.lock
+        run: uv sync --locked
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Kiem tra dinh dang
+        run: uv run ruff format --check .
+
+      - name: Kiem tra kieu
+        run: uv run mypy
+
+      - name: Chay test
+        run: uv run pytest --cov=app --cov-report=term-missing
