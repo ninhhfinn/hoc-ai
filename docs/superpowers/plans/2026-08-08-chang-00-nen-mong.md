@@ -14,7 +14,7 @@
 
 ## Global Constraints
 
-- **Python 3.12** — bắt buộc. Không dùng Python 3.14.4 có sẵn trên máy: `torch` và `sentence-transformers` chưa có wheel cho 3.12+. `requires-python = ">=3.12,<3.13"`.
+- **Python 3.12** — bắt buộc, `requires-python = ">=3.12,<3.13"`. Không dùng Python 3.14.4 có sẵn trên máy, nhưng **không phải vì 3.14 hỏng**: một project cần một phiên bản Python cố định, đúng cùng lý do cần `uv.lock` — máy bạn, máy khác và CI phải chạy trên một bản duy nhất. Chọn một bản đã ổn định lâu là cách tránh rủi ro hệ sinh thái ML chậm chân, chứ không phải cách chữa một lỗi đã xảy ra. (Kiểm chứng ngày 2026-08-09: `torch` 2.13.0 **có** wheel `cp314`, và đã có từ 2.9.0; `sentence-transformers` là gói thuần Python `py3-none-any`. Bản gốc của dòng này ghi ngược lại — xem "Sửa sau review tổng thể" ở cuối file.)
 - **Tất cả tên hàm, biến, comment, docstring, thông báo lỗi viết bằng tiếng Việt không dấu** (ví dụ `kiem_tra_python`, `bat_buoc`). Lý do: người học đọc code của chính mình dễ hơn, và tránh lỗi encoding trên console. Nội dung trong `docs/lessons/` thì viết **tiếng Việt có dấu**.
 - **Viết test trước, luôn luôn** (spec §9.3). Mỗi task đều theo vòng đỏ → xanh → commit.
 - **Không bao giờ commit `.env`.** File `.gitignore` đã chặn; Task 5 thêm hàng rào thứ hai.
@@ -65,7 +65,7 @@ Ranh giới cố ý: `doctor.py` **không** tự đọc `sys.version_info` bên 
 mkdir -p docs/lessons
 ```
 
-- [ ] **Step 2: Viết bài học với đúng 6 mục sau**
+- [ ] **Step 2: Viết bài học với đúng 7 mục sau**
 
 Tạo `docs/lessons/lesson-00-nen-mong.md`. Viết tiếng Việt có dấu. Mỗi mục là một `##`.
 
@@ -91,7 +91,11 @@ so với RAG (tìm đoạn liên quan, dán vào prompt, 5 giây, 0 đồng). RA
 *"dạy model thứ nó chưa biết mà không cần train"*.
 
 **Mục 3 — `## Vì sao phải ghim phiên bản Python`**
-Máy đang có Python 3.14.4. `torch` chưa có wheel cho 3.14. Giải thích wheel là gì, vì sao
+Máy đang có Python 3.14.4, nhưng dự án ghim 3.12. Nêu đúng lý do: **không phải vì 3.14 thiếu
+wheel** — `torch` 2.13.0 có wheel `cp314` và đã có từ 2.9.0, `sentence-transformers` là gói
+thuần Python. Lý do thật là một project cần một phiên bản cố định, cùng lý do cần `uv.lock`;
+và hệ sinh thái ML thường chậm vài tháng so với bản Python mới nhất nên chọn bản ổn định lâu
+là cách phòng rủi ro. Giải thích wheel là gì, vì sao
 build từ nguồn thất bại. Giới thiệu `uv` và file `.python-version`. Nêu rõ: `uv` tải Python
 riêng cho project, không đụng Python hệ thống.
 
@@ -1338,7 +1342,44 @@ Expected:
 - [ ] Thử commit `.env` → **bị chặn**
 - [ ] CI trên GitHub xanh ở nhánh `main`
 - [ ] Có ít nhất một PR đã merge
-- [ ] Đọc xong `docs/lessons/lesson-00-nen-mong.md` và trả lời miệng được 6 câu hỏi ở Task 1 Step 3
+- [ ] Đọc xong `docs/lessons/lesson-00-nen-mong.md` và trả lời miệng được 7 câu hỏi ở Task 1 Step 3
+
+## Sửa sau review tổng thể
+
+Review toàn nhánh (sau khi Task 1–7 xong) tìm ra 4 lỗi thật. Ghi lại ở đây vì mỗi lỗi là một
+bài học riêng, và vì `.github/workflows/ci.yml`, `scripts/chan-env.sh`, `README.md` sau khi sửa
+sẽ khác với nội dung ghi trong Task 5/6/7 phía trên.
+
+1. **Bài học dạy sai một sự thật.** Mục 3 viết `torch` chưa có wheel cho Python 3.14. Kiểm
+   chứng trên PyPI ngày 2026-08-09: sai — `torch` 2.13.0 có wheel `cp314`, đã có từ 2.9.0;
+   `sentence-transformers` là `py3-none-any`, chưa bao giờ phụ thuộc phiên bản Python. Quyết
+   định ghim 3.12 **giữ nguyên** (lý do thật ở Global Constraints), chỉ sửa lý do được nêu.
+   Đây là loại lỗi nguy hiểm nhất trong ba plan defect trước cộng lại: ba lỗi kia là lỗi cơ
+   học, chạy thử là lộ; lỗi này là một khẳng định về thế giới bên ngoài mà không lệnh nào
+   trong plan kiểm chứng được, nên nó đi thẳng từ spec qua plan vào bài học. **Từ Chặng 1: mọi
+   mệnh đề dạng "thư viện X không hỗ trợ Y" phải kèm lệnh kiểm chứng ngay trong plan.**
+
+2. **Test không hermetic.** `test_lay_cau_hinh_tra_ve_doi_tuong_settings` và
+   `test_main_lenh_doctor_tra_ve_0_khi_moi_thu_dat` gọi `Settings()` không có `_env_file=None`,
+   nên đọc file `.env` thật. Người học làm đúng theo README (`cp .env.example .env`) rồi đổi
+   provider sang deepseek trước khi dán key là hai test đỏ ngay. CI xanh **không** chứng minh
+   test đã hermetic — CI xanh vì CI không có `.env`. Sửa bằng `tests/conftest.py` với fixture
+   autouse xoá biến môi trường của app và `chdir` sang thư mục tạm. Việc này đóng luôn finding
+   parked của Task 4.
+
+3. **Hai hàng rào chặn lộ khoá không chạy trên CI.** `detect-private-key` và `chan-env.sh` chỉ
+   có hiệu lực trên máy nào đã tự gõ `uv run pre-commit install`. Nhưng Task 7 Step 3 lại lấy
+   chính hàng rào đó làm lý do chọn `--public`. Một hàng rào opt-in không đỡ được lập luận đó.
+   Thêm bước `uv run pre-commit run --all-files` vào `ci.yml`.
+
+4. **`chan-env.sh` bỏ lọt mọi biến thể `.env.*`.** Regex `(^|/)\.env$` chỉ khớp đúng tên `.env`,
+   nên `.env.local` đi lọt — dù `.gitignore` chặn `.env.*`. Hàng rào thứ hai tồn tại chính là
+   để phòng khi hàng rào thứ nhất thủng, nên một lỗ ngay chỗ hàng rào thứ nhất dùng pattern
+   phủ định là chỗ đáng vá nhất. Bản vá dùng `-z` để xử lý luôn `core.quotePath` (đường dẫn có
+   ký tự tiếng Việt bị git bọc trong dấu nháy nên không khớp `\.env$`).
+
+Ba việc thêm ngoài phạm vi plan gốc, human duyệt: badge CI trong README, LICENSE MIT + mô tả
+repo, và `permissions: contents: read` + `timeout-minutes` cho CI.
 
 ## Chặng tiếp theo
 
