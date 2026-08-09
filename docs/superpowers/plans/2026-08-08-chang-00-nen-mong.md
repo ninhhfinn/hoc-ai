@@ -1066,7 +1066,7 @@ jobs:
       - name: Cai phu thuoc dung uv.lock
         run: uv sync --locked
 
-      - name: Lint
+      - name: Lint (soi loi code)
         run: uv run ruff check .
 
       - name: Kiem tra dinh dang
@@ -1081,6 +1081,11 @@ jobs:
 
 `uv sync --locked` bắt CI dùng đúng phiên bản ghi trong `uv.lock`. Nếu ai đó sửa
 `pyproject.toml` mà quên cập nhật lock, CI sẽ đỏ — đúng ý.
+
+Ghi chú về tên các bước: mọi `name:` đều là tiếng Việt không dấu, theo ràng buộc toàn cục —
+tên bước chính là thứ bạn nhìn thấy trong log CI, nên nó phải nói cho bạn biết bước đó đang
+làm gì. Riêng `Lint (soi loi code)` giữ lại chữ *lint* vì đó là thuật ngữ bạn sẽ gặp trong mọi
+JD và mọi repo; phần trong ngoặc là bản dịch để lần đầu nhìn log không phải đoán.
 
 - [ ] **Step 3: Chạy thử toàn bộ chuỗi CI ở máy trước khi đẩy lên**
 
