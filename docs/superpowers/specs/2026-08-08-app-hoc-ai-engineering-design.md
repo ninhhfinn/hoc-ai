@@ -327,7 +327,7 @@ Qdrant giữ vector và nội dung chunk. SQLite giữ **trạng thái học t�
 
 | Mảng | Chọn | Lý do |
 |---|---|---|
-| Python | **3.12** qua `uv` | 3.14 chưa có wheel cho `torch`. `uv` cài Python riêng cho project |
+| Python | **3.12** qua `uv` | Máy này, máy khác và CI phải cùng một bản; hệ sinh thái ML chậm hơn bản Python mới nhất vài tháng. `uv` cài Python riêng cho project |
 | Web API | **FastAPI + Pydantic** | JD ghi thẳng tên. Pydantic dạy ràng buộc dữ liệu |
 | Embedding | **`intfloat/multilingual-e5-base`** local GPU | Hiểu Việt lẫn Anh, 768 chiều, ~0.6 GB VRAM |
 | VectorDB | **Qdrant** (Docker) | JD ghi "VectorDB". Có UI xem được vector |
@@ -359,9 +359,12 @@ nhà cung cấp chỉ là đổi một dòng cấu hình.
 
 ### 9.1 Dùng Python 3.12, không dùng 3.14 có sẵn
 
-Máy đang có Python 3.14.4. `torch` và `sentence-transformers` phần lớn chưa phát hành wheel
-cho 3.14; cài sẽ phải build từ nguồn hoặc lỗi thẳng. `uv` tải Python 3.12 riêng cho project,
-không đụng tới Python hệ thống.
+Máy đang có Python 3.14.4, và **3.14 không hỏng** — kiểm chứng trên PyPI ngày 2026-08-09:
+`torch` 2.13.0 có wheel `cp314` (đã có từ 2.9.0), `sentence-transformers` là gói thuần Python
+`py3-none-any`. Ghim 3.12 vì lý do khác: một project cần đúng một phiên bản Python cố định,
+cùng lý do cần `uv.lock` — máy này, máy khác và CI phải chạy trên một bản duy nhất; và hệ sinh
+thái ML thường chậm vài tháng sau mỗi bản Python mới nên chọn bản đã ổn định lâu là phòng rủi
+ro, không phải chữa lỗi. `uv` tải Python 3.12 riêng cho project, không đụng tới Python hệ thống.
 
 Đây cũng là bài học đầu tiên: **quản lý môi trường Python** — thứ mọi JD ngầm đòi và người
 mới hay bỏ qua.
@@ -604,7 +607,7 @@ Phủ 10/10.
 | Rủi ro | Mức | Giảm thiểu |
 |---|---|---|
 | Bỏ cuộc giữa chừng | **Cao** | Mỗi chặng ra sản phẩm dùng được; người học tự dùng app hằng ngày nên có động lực sửa lỗi |
-| Python 3.14 gây lỗi cài đặt | Cao | `uv` ghim Python 3.12 ngay từ Chặng 0 |
+| Hệ sinh thái ML chậm chân so với bản Python mới nhất | Cao | `uv` ghim Python 3.12 ngay từ Chặng 0 |
 | DeepSeek tăng giá hoặc chặn thanh toán từ VN | Trung bình | Lớp `LLMProvider` + Ollama local sẵn sàng thay thế |
 | RAM 14 GB không đủ khi chạy đồng thời | Trung bình | Docker Compose profiles; không bật Ollama và Qdrant cùng lúc khi không cần |
 | Disk 38 GB cạn | Trung bình | Theo dõi dung lượng; dọn image và model không dùng |

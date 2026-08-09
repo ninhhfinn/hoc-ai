@@ -60,7 +60,8 @@ nhớ, đánh đổi một chút độ chính xác) xuống 4-bit thì chỉ c�
 
 Máy của bạn — RTX 4060 Laptop 8GB VRAM, i5-13500HX, RAM 14GB — hoàn toàn không đủ để train một
 model 7B (thiếu hơn 100GB VRAM), nhưng **thừa sức** để chạy inference cho cả hai model dự án
-này cần: `multilingual-e5-base` dùng để tạo vector cho văn bản (~0.6GB VRAM) và Qwen2.5-7B đã
+này cần: `multilingual-e5-base` dùng để tạo vector cho văn bản (~0.6GB VRAM ở fp16, ~1.1GB ở
+fp32 mặc định) và Qwen2.5-7B đã
 lượng tử hoá 4-bit dùng làm LLM đối chứng chạy local (~5GB VRAM) — cộng lại vẫn còn dư VRAM
 trong ngân sách 8GB. Đây là lý do then chốt: dự án này khả thi trên đúng chiếc laptop bạn đang
 có, vì nó chưa bao giờ định train bất cứ thứ gì.
@@ -116,33 +117,55 @@ một app hỏi đáp dựa trên tài liệu do chính bạn nạp vào.
 
 ## Vì sao phải ghim phiên bản Python
 
-Máy bạn hiện đang cài sẵn Python 3.14.4 — một phiên bản rất mới. Nghe có vẻ "mới hơn thì tốt
-hơn", nhưng trong dự án này nó lại là một vấn đề, vì hai thư viện cốt lõi của Machine
-Learning — `torch` (PyTorch, thư viện tính toán tensor và chạy model) và `sentence-transformers`
-(dùng để chạy model embedding) — chưa phát hành **wheel** cho Python 3.14 tại thời điểm viết
-bài này.
+Máy bạn đang cài sẵn Python 3.14.4 — một phiên bản rất mới — nhưng dự án `hoc-ai` sẽ chạy trên
+Python 3.12. Phải dẹp ngay một hiểu nhầm rất dễ mắc: **không phải vì 3.14 hỏng**. Hai thư viện
+Machine Learning cốt lõi của dự án đều dùng được trên 3.14 — `torch` (PyTorch, thư viện tính
+toán tensor và chạy model) có bản cài sẵn cho 3.14, còn `sentence-transformers` (dùng để chạy
+model embedding) là gói thuần Python nên chưa bao giờ phụ thuộc vào phiên bản Python. (Kiểm
+chứng trên PyPI ngày 2026-08-09: `torch` 2.13.0 có bản cài sẵn cho 3.14, và đã có từ bản
+2.9.0. Thói quen nên học ngay từ đây: mọi câu dạng "thư viện X không hỗ trợ Y" đều phải kiểm
+chứng được, kèm ngày kiểm chứng.)
 
-**Wheel** là gì? Đó là định dạng gói cài đặt đã được biên dịch sẵn (file `.whl`) cho một tổ hợp
-cụ thể: phiên bản Python + hệ điều hành + kiến trúc CPU (và với các thư viện GPU như `torch`,
-còn thêm cả phiên bản CUDA — nền tảng tính toán của NVIDIA). Khi bạn gõ `pip install torch`,
-pip đi tìm một file wheel khớp đúng tổ hợp máy bạn đang chạy, tải về, giải nén — xong, không
-cần biên dịch gì thêm, mất vài chục giây.
+Ghim 3.12 không phải là vá một lỗi đã xảy ra, mà là một lựa chọn phòng ngừa, vì hai lý do.
 
-Vấn đề xảy ra khi **không có wheel** khớp với máy bạn. Với `torch`, mã nguồn bên dưới là hàng
-trăm nghìn dòng C++/CUDA; "build từ nguồn" (tự biên dịch lại từ mã nguồn thay vì tải bản có
-sẵn) đòi hỏi đúng phiên bản trình biên dịch, đúng phiên bản CUDA Toolkit, đủ RAM để biên dịch,
-và có thể mất hàng giờ — với xác suất lỗi giữa chừng rất cao, đặc biệt với người mới chưa từng
-cấu hình môi trường biên dịch C++. Vì Python 3.14 quá mới, các đội phát triển thư viện chưa kịp
-build và phát hành wheel cho nó. Kết quả nếu cứ dùng 3.14: lệnh cài đặt hoặc báo lỗi thẳng, hoặc
-âm thầm chuyển sang build từ nguồn rồi lỗi giữa chừng — cả hai đều là trải nghiệm tệ cho người
-mới.
+**Lý do thứ nhất: một project cần đúng một phiên bản Python cố định.** Code chạy được trên máy
+bạn chỉ có giá trị khi nó cũng chạy được trên máy người khác và trên máy chủ CI (Continuous
+Integration — máy tự động chạy test mỗi lần bạn đẩy code lên). Nếu ba nơi đó dùng ba phiên bản
+Python khác nhau, bạn sẽ gặp loại lỗi khó chịu nhất: "trên máy tôi chạy được mà". Cùng một
+dòng code có thể hợp lệ ở bản này và báo lỗi cú pháp ở bản kia; một hàm trong thư viện chuẩn
+có thể đổi hành vi giữa hai bản. Ghim phiên bản Python xoá hẳn nhóm biến số đó khỏi phương
+trình. Đây cũng đúng là lý do dự án ghim phiên bản của từng thư viện trong một file khoá
+(`uv.lock` — file ghi chính xác bản nào của thư viện nào đã cài): phiên bản Python là mắt xích
+lớn nhất trong cùng chuỗi lập luận ấy, nên khoá thư viện mà thả nổi Python thì việc khoá mất
+đi phân nửa ý nghĩa.
+
+**Lý do thứ hai: hệ sinh thái ML thường chậm chân sau mỗi bản Python mới.** Python ra bản mới
+mỗi năm một lần. Thư viện thuần Python bắt kịp gần như ngay, nhưng thư viện có phần biên dịch
+sẵn thì cần thêm vài tuần đến vài tháng — và hầu hết thư viện quan trọng trong ML thuộc nhóm
+sau. Để hiểu vì sao lại chậm, cần biết **wheel** là gì.
+
+Wheel là định dạng gói cài đặt đã được biên dịch sẵn (file `.whl`) cho một tổ hợp cụ thể:
+phiên bản Python + hệ điều hành + kiến trúc CPU (và với các thư viện GPU như `torch`, còn thêm
+cả phiên bản CUDA — nền tảng tính toán của NVIDIA). Khi bạn gõ `pip install torch`, pip đi tìm
+một file wheel khớp đúng tổ hợp máy bạn đang chạy, tải về, giải nén — xong, không cần biên
+dịch gì thêm, mất vài chục giây. Mỗi phiên bản Python mới là một tổ hợp mới, nên thư viện phải
+build và phát hành thêm một loạt wheel nữa — việc đó luôn diễn ra *sau* khi bản Python mới ra
+đời.
+
+Chuyện gì xảy ra khi **không có wheel** khớp với máy bạn? pip quay sang "build từ nguồn" — tự
+biên dịch lại từ mã nguồn thay vì tải bản có sẵn. Với `torch`, mã nguồn bên dưới là hàng trăm
+nghìn dòng C++/CUDA; build nó đòi hỏi đúng phiên bản trình biên dịch, đúng phiên bản CUDA
+Toolkit, đủ RAM để biên dịch, và có thể mất hàng giờ — với xác suất lỗi giữa chừng rất cao,
+đặc biệt với người mới chưa từng cấu hình môi trường biên dịch C++. Đứng ở rìa ngoài cùng của
+hệ sinh thái là chấp nhận rủi ro rơi vào tình huống đó. Ngược lại, một phiên bản Python đã ổn
+định vài năm gần như chắc chắn có sẵn wheel cho mọi thư viện bạn cần. Chọn 3.12 là mua lấy sự
+chắc chắn ấy cho một dự án học kéo dài nhiều tháng.
 
 Giải pháp không phải là gỡ Python 3.14.4 đi. Giải pháp là dùng **`uv`** — một công cụ quản lý
 project và phiên bản Python (viết bằng Rust, chạy rất nhanh) có khả năng tự tải về một bản
-Python khác (ví dụ 3.12 — phiên bản đã được các thư viện ML hỗ trợ đầy đủ) **riêng cho từng
-project**, hoàn toàn tách biệt với Python hệ thống. Nói cách khác: Python 3.14.4 đang cài trên
-máy bạn vẫn nằm nguyên đó, dùng cho việc khác nếu cần; project `hoc-ai` sẽ có một bản Python
-3.12 riêng, do `uv` quản lý, chỉ project này thấy và dùng.
+Python khác **riêng cho từng project**, hoàn toàn tách biệt với Python hệ thống. Nói cách khác:
+Python 3.14.4 đang cài trên máy bạn vẫn nằm nguyên đó, dùng cho việc khác nếu cần; project
+`hoc-ai` sẽ có một bản Python 3.12 riêng, do `uv` quản lý, chỉ project này thấy và dùng.
 
 Cơ chế ghim phiên bản nằm ở một file tên `.python-version` — chỉ chứa một dòng, ví dụ `3.12`.
 Khi bạn chạy bất cứ lệnh nào qua `uv` (ví dụ `uv run pytest`), `uv` đọc file này, kiểm tra xem
