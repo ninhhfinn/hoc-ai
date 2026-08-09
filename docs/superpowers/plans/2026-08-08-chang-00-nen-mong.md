@@ -1381,6 +1381,51 @@ sẽ khác với nội dung ghi trong Task 5/6/7 phía trên.
 Ba việc thêm ngoài phạm vi plan gốc, human duyệt: badge CI trong README, LICENSE MIT + mô tả
 repo, và `permissions: contents: read` + `timeout-minutes` cho CI.
 
+## Việc mang sang Chặng 1
+
+Review tổng thể để lại một số việc không chặn Chặng 0 nhưng nên làm sớm ở Chặng 1.
+
+**Cặp đi liền — cache cấu hình.** `lay_cau_hinh()` hiện đọc lại `.env` từ đĩa mỗi lần gọi. Với
+FastAPI `Depends(lay_cau_hinh)` thì thành một lần I/O mỗi request, nên sẽ cần `@lru_cache`.
+Nhưng cache phá các test dùng `monkeypatch.setenv`, nên **khi thêm cache phải thêm luôn**
+`lay_cau_hinh.cache_clear()` vào fixture trong `tests/conftest.py`. Làm thiếu một nửa là sinh
+bug rất khó truy.
+
+**`deepseek_api_key` nên là `pydantic.SecretStr`.** Hiện chưa lộ gì, nhưng `doctor.py` làm
+`str(loi)` rồi in ra stdout, và lỗi từ `model_validator(mode="after")` có dump nguyên dict đầu
+vào. Chặng 1 thêm `structlog` sẽ log `Settings` — lúc đó `SecretStr` là thứ duy nhất đứng giữa
+khoá thật và file log. Rẻ nhất là làm ngay khi mới có một chỗ dùng.
+
+**Dùng cái seam đã có sẵn.** `chay_kiem_tra(settings=...)` đang bỏ không: `__main__.py` gọi
+rỗng, không test nào truyền vào. Chặng 1 dựng FastAPI dependency sẽ cần đúng pattern đó — nối
+`main` → `chay_kiem_tra(lay_cau_hinh())` cho nhất quán.
+
+**Một nguồn sự thật cho số phiên bản.** `pyproject.toml` và `app/__init__.py` đang giữ hai bản
+`"0.1.0"`, và `test_khoi_dong.py` khẳng định literal. Chuyển sang
+`importlib.metadata.version("hoc-ai")` hoặc `[tool.hatch.version]` trước khi có bản 0.2.0.
+
+**`EMBEDDING_DEVICE=cuda` mặc định sẽ nổ ở Chặng 3 trên máy không GPU**, kể cả CI nếu Chặng 3
+có test nạp model. `doctor` đã có sẵn `kiem_tra_lenh` — thêm `kiem_tra_lenh("nvidia-smi",
+bat_buoc=False)` là hợp lý, và Mục 7 bài học đã dạy `nvidia-smi` rồi nên nó khép vòng luôn.
+
+**Nâng version của GitHub Action.** `actions/checkout@v4` (hiện tại là v7) và
+`astral-sh/setup-uv@v5` (hiện tại là v9) đều chậm nhiều major. Vẫn chạy được nên không gấp.
+
+**Lỗ còn lại của hàng rào trên CI.** `pre-commit run --all-files` không stage gì, nên
+`chan-env.sh` đọc index rỗng và luôn Passed trên CI. Bảo vệ thật ở CI là `.gitignore` cộng với
+việc `.env` không được track — còn `detect-private-key` chỉ khớp header khoá PEM/OpenSSH, không
+bắt được một khoá `sk-...` nằm trong `.env`. Đóng bằng một bước
+`git ls-files -z | grep -zqE '(^|/)\.env(\.|$)'`.
+
+**Hai chỗ chữ nghĩa trong bài học.** Câu "`sentence-transformers` chưa bao giờ phụ thuộc vào
+phiên bản Python" nói quá: gói này khai báo `requires_python: >=3.10` và phụ thuộc `torch`.
+Đúng về *wheel tag*, sai nếu đọc theo nghĩa đen. Và đoạn `~0.6GB` có một dòng xuống hàng lệch
+so với phần còn lại của file.
+
+**`docs/lessons/` đã sẵn sàng cho RAG — đừng đổi cấu trúc.** Chỉ `#`/`##`, mỗi mục 534-936 từ,
+không tham chiếu chéo giữa các mục. Chặng 3 chunk theo `##` là chạy được ngay. Giữ đúng khuôn
+này cho `lesson-01`.
+
 ## Chặng tiếp theo
 
 Chặng 1 — API đầu tiên (FastAPI, Pydantic, HTTP, async). Plan riêng, viết khi Chặng 0 xong,
