@@ -1,5 +1,7 @@
 # hoc-ai
 
+[![CI](https://github.com/ninhhfinn/hoc-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/ninhhfinn/hoc-ai/actions/workflows/ci.yml)
+
 App học tập cá nhân để trở thành AI Engineer — vừa là công cụ học, vừa là dự án portfolio.
 
 Nạp tài liệu (PDF, Markdown, URL) vào app; app trả lời câu hỏi kèm trích nguồn, sinh quiz,
