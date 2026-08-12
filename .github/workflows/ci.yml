@@ -17,11 +17,21 @@ jobs:
     # bi cat thay vi chay het gio mien phi cua runner.
     timeout-minutes: 15
     steps:
+      # Ghim ban day du thay vi nhan major troi (@v7, @v9). Hai ly do:
+      #
+      # 1. Nhan troi khong chac ton tai. `astral-sh/setup-uv` ngung phat hanh
+      #    nhan major troi tu sau v7: `v8` va `v9` deu 404, du release moi nhat
+      #    la v9.0.0. Viet @v9 lam CI chet ngay o buoc "Set up job".
+      # 2. Cung ly do da ghim Python 3.12 va uv.lock: mot lan chay CI phai lap
+      #    lai duoc. Nhan troi doi noi dung duoi chan minh.
+      #
+      # Danh doi: khong tu nhan ban va len. Kiem tra dinh ky bang:
+      #   gh api repos/<chu>/<repo>/releases/latest --jq .tag_name
       - name: Lay ma nguon
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Cai uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v9.0.0
         with:
           enable-cache: true
 
