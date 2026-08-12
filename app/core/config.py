@@ -5,6 +5,7 @@ os.environ truc tiep. Nho vay moi thiet lap deu co kieu va duoc kiem tra
 ngay luc khoi dong thay vi hong am tham luc chay.
 """
 
+from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
@@ -51,6 +52,7 @@ class Settings(BaseSettings):
         return self
 
 
+@lru_cache
 def lay_cau_hinh() -> Settings:
     """Tra ve cau hinh doc tu moi truong hien tai."""
     return Settings()
