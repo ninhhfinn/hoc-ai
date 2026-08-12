@@ -7,7 +7,10 @@ Khong chua logic nghiep vu nao.
 import argparse
 import sys
 
+from pydantic import ValidationError
+
 from app import __version__
+from app.core.config import lay_cau_hinh
 from app.core.doctor import chay_kiem_tra
 
 
@@ -24,7 +27,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.lenh == "doctor":
-        bao_cao = chay_kiem_tra()
+        try:
+            settings = lay_cau_hinh()
+        except ValidationError:
+            settings = None
+        bao_cao = chay_kiem_tra(settings)
         print(bao_cao.dinh_dang())
         return 0 if bao_cao.tat_ca_dat() else 1
 
