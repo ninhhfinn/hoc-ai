@@ -14,7 +14,7 @@ chấm bài, và tự đo chất lượng bằng một bộ eval.
 - **Ngăn xếp:** Python 3.12 (ghim qua `uv`), Pydantic 2, pytest, ruff, mypy strict, pre-commit,
   GitHub Actions.
 - **Trạng thái:** Chặng 0 (Nền móng) đã xong. Đang ở đầu Chặng 1 (API đầu tiên — FastAPI).
-- **Lộ trình:** 9 chặng, mỗi chặng kết thúc bằng một app chạy được.
+- **Lộ trình:** 11 chặng (0–10), mỗi chặng kết thúc bằng một app chạy được.
 
 Chi tiết ở hai file sau — **đọc khi cần, đừng chép lại nội dung của chúng đi đâu**:
 
@@ -36,7 +36,10 @@ Vi phạm bất kỳ dòng nào dưới đây thì PR bị từ chối, không c
 3. **Không thêm dependency** vào `pyproject.toml`. Cả 8 nhiệm vụ dưới đây đều không cần thư
    viện mới. Nếu bạn nghĩ là cần — bạn đang làm sai hướng, dừng lại và báo.
 4. **Không đụng vào:** `.env`, `uv.lock`, `docs/superpowers/specs/`,
-   `docs/superpowers/plans/`. Hai thư mục sau là bản ghi lịch sử, không phải tài liệu sống.
+   `docs/superpowers/plans/`. Ràng buộc này dành cho agent **đang làm một nhiệm vụ N**.
+   `plans/` là bản ghi lịch sử của một chặng đã xong. `specs/` thì có thay đổi, nhưng chỉ
+   trong phiên thiết kế cùng chủ repo — không bao giờ trong lúc chạy một nhiệm vụ N. Thấy
+   spec sai hay thiếu thì **báo, đừng sửa**.
 5. **Không sửa hay xoá test cho hết đỏ.** Test đỏ nghĩa là code sai, không phải test sai. Nếu
    một nhiệm vụ *bắt buộc* phải sửa test cũ, nhiệm vụ đó nói rõ ở mục "Bẫy".
 6. **Không `git push --force`. Không commit thẳng lên `main`.**
@@ -56,6 +59,11 @@ Vi phạm bất kỳ dòng nào dưới đây thì PR bị từ chối, không c
     lỗi nghiêm trọng nhất mà review Chặng 0 tìm ra: một câu sai về phiên bản thư viện đi thẳng
     từ spec qua plan vào bài học vì không lệnh nào kiểm được nó. Mọi mệnh đề dạng "thư viện X
     phiên bản Y" phải kèm output lệnh, kèm ngày.
+12. **Dùng nguyên chuỗi mà lệnh kiểm chứng trả về. Không rút gọn, không suy ra.** Luật này
+    thêm sau khi N8 sai đúng kiểu đó: lệnh trả `v9.0.0`, người làm rút thành `@v9` cho gọn,
+    CI chết sau 4 giây vì nhãn `v9` **không tồn tại** — `astral-sh/setup-uv` ngừng phát hành
+    nhãn major trôi từ sau `v7`. *"Bản mới nhất là số mấy"* và *"nhãn nào thật sự tồn tại"* là
+    hai câu hỏi khác nhau, phải hỏi riêng. Chạy lệnh xong thì chép y nguyên, đừng làm đẹp.
 
 ---
 
@@ -186,6 +194,8 @@ ApphocAIengineering/
 
 8 nhiệm vụ, lấy nguyên từ mục "Việc mang sang Chặng 1" của
 `docs/superpowers/plans/2026-08-08-chang-00-nen-mong.md`. Xếp theo rủi ro tăng dần.
+
+**Trạng thái (2026-08-12): N8 đã xong và merge (PR #4). Còn N1–N7.**
 
 **Phụ thuộc:** N1, N2, N3 độc lập — làm song song được. **N4 phải xong trước N5** (cùng sửa
 `app/core/config.py`). N6, N7, N8 độc lập.
@@ -447,7 +457,7 @@ Hàng rào thật phải hỏi *cái gì đang bị track*, và `git ls-files` l
 
 ---
 
-### N8 — Nâng phiên bản GitHub Action
+### N8 — Nâng phiên bản GitHub Action ✅ ĐÃ XONG (PR #4, 2026-08-12)
 
 **File được sửa:** `.github/workflows/ci.yml`
 
@@ -470,6 +480,13 @@ gh api repos/astral-sh/setup-uv/releases/latest --jq .tag_name
 - CI xanh sau khi push.
 - Nếu bản mới đổi API (tên input khác, hành vi khác) làm CI đỏ: **dừng và báo**, đừng tự đoán
   cách sửa.
+
+**Đã xảy ra gì (giữ lại vì đây là bài học, không phải để khoe):** lần làm đầu điền `@v7` và
+`@v9` — số major suy ra từ output, không phải chuỗi output. CI chết sau 4 giây ở bước Set up
+job. Nhãn `v9` không tồn tại; `astral-sh/setup-uv` chỉ phát hành nhãn major trôi tới `v7`, dù
+release mới nhất là `v9.0.0`. Bản chốt dùng nhãn đầy đủ `actions/checkout@v7.0.1` và
+`astral-sh/setup-uv@v9.0.0` — vừa là thứ duy nhất resolve được, vừa khớp nguyên tắc ghim của
+project (Python 3.12, `uv.lock`). Luật 12 sinh ra từ đây.
 
 ---
 
