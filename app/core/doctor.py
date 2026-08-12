@@ -76,6 +76,7 @@ def chay_kiem_tra(settings: Settings | None = None) -> BaoCao:
         kiem_tra_python(sys.version_info[:2]),
         kiem_tra_lenh("git"),
         kiem_tra_lenh("docker", bat_buoc=False),
+        kiem_tra_lenh("nvidia-smi", bat_buoc=False),
         KetQua("He dieu hanh", True, platform.platform()),
     ]
 
