@@ -1,3 +1,5 @@
 """App hoc tap de tro thanh AI Engineer."""
 
-__version__ = "0.1.0"
+import importlib.metadata
+
+__version__ = importlib.metadata.version("hoc-ai")
