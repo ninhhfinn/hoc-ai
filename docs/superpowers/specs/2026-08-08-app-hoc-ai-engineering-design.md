@@ -1,6 +1,7 @@
 # Thiết kế: App học tập để trở thành AI Engineer
 
 **Ngày:** 2026-08-08
+**Cập nhật:** 2026-08-12 — thêm Chặng 9–10, vá lỗ hổng nén ngữ cảnh ở §4.3
 **Trạng thái:** Đã duyệt
 **Tác giả:** ninh + Claude
 
@@ -12,9 +13,10 @@ Xây một ứng dụng RAG cá nhân bằng tiếng Việt, vừa là **công c
 Người dùng nạp tài liệu (PDF, Markdown, URL) vào app; app trả lời câu hỏi kèm trích nguồn, tự
 sinh quiz, chấm bài, phỏng vấn thử, và tự đo chất lượng của chính nó bằng một bộ eval.
 
-Điểm cốt lõi: **quá trình xây app chính là giáo trình.** Mỗi chặng phát triển tương ứng một
-nhóm yêu cầu trong JD AI Engineer Intern 2026. Tài liệu học của mỗi chặng được nạp ngược vào
-app, để app kiểm tra lại kiến thức người xây nó.
+Điểm cốt lõi: **quá trình xây app chính là giáo trình.** Chặng 0–8 mỗi chặng tương ứng một
+nhóm yêu cầu trong JD AI Engineer Intern 2026; Chặng 9–10 thêm phần JD chưa ghi nhưng thực tế
+đòi (§13.3). Tài liệu học của mỗi chặng được nạp ngược vào app, để app kiểm tra lại kiến thức
+người xây nó.
 
 ---
 
@@ -96,6 +98,10 @@ một lõi RAG.
      nguồn        ngắt quãng                review        lượng
 ```
 
+Chặng 9–10 **không thêm chế độ mới**. Chúng làm dày cái lõi: tracing để nhìn được bên trong
+từng lượt (§9.8), MCP để lõi vừa gọi ra ngoài vừa được gọi vào (§9.10), và bộ nhớ dài hạn phục
+vụ chế độ 2 và 3.
+
 ### 4.1 Hỏi đáp có trích nguồn
 
 Người dùng đặt câu hỏi. App tìm các đoạn tài liệu liên quan, đưa vào prompt, trả lời, và
@@ -113,6 +119,21 @@ câu đó. Chủ đề người học hay sai được ưu tiên.
 Phiên hội thoại nhiều lượt. AI đóng vai người phỏng vấn, hỏi theo chủ đề JD, đào sâu dựa
 trên câu trả lời trước, cuối phiên chấm điểm và chỉ ra chỗ thiếu. Dùng LangGraph để quản lý
 trạng thái phiên.
+
+**Nén ngữ cảnh.** Một phiên phỏng vấn thật kéo 15–20 lượt. Gửi nguyên transcript ở mỗi lượt là
+chi phí tăng theo bình phương số lượt, và tới một điểm thì vượt ngân sách token. Cách xử lý:
+
+- Sáu lượt gần nhất luôn giữ **nguyên văn**.
+- Phần cũ hơn được LLM tóm tắt cuộn thành ≤300 token, cất ở `interview_sessions.summary`, cập
+  nhật lại mỗi khi có lượt bị đẩy ra khỏi cửa sổ.
+- `transcript_json` vẫn lưu **đầy đủ**, không đụng tới. Nó là dữ liệu để chấm điểm cuối phiên
+  và để đọc lại, không phải thứ gửi cho model.
+
+Cắt thẳng phần cũ thì rẻ hơn nhưng mất đúng thứ người phỏng vấn cần nhớ: đã hỏi gì rồi, người
+học hụt ở đâu. Tóm tắt giữ được cái đó với giá một lời gọi LLM mỗi vài lượt.
+
+Đây là chỗ Chặng 2 trả bài: cửa sổ ngữ cảnh không phải một con số để thuộc lòng, mà là một
+ràng buộc phải thiết kế quanh nó.
 
 ### 4.4 Chấm bài code
 
@@ -164,7 +185,7 @@ ApphocAIengineering/
 │   │   ├── lesson-00-nen-mong.md        # Chặng 0 (kèm phần train vs inference)
 │   │   ├── lesson-01-fastapi.md         # Chặng 1
 │   │   ├── ...                          # lesson-NN ↔ Chặng NN
-│   │   └── lesson-08-cham-code.md       # Chặng 8
+│   │   └── lesson-10-mcp-bo-nho.md      # Chặng 10
 │   └── superpowers/specs/       # spec và plan
 ├── app/
 │   ├── core/
@@ -175,6 +196,7 @@ ApphocAIengineering/
 │   │   ├── vectorstore.py       # VectorStore protocol + bản numpy, bản Qdrant
 │   │   ├── retriever.py
 │   │   ├── prompts.py           # template prompt, tách khỏi logic
+│   │   ├── tracing.py           # Tracer protocol + bản SQLite / Langfuse / Null
 │   │   └── llm/
 │   │       ├── base.py          # LLMProvider protocol, Completion, giá tiền
 │   │       ├── deepseek.py
@@ -187,11 +209,15 @@ ApphocAIengineering/
 │   │   ├── qa.py
 │   │   ├── quiz.py
 │   │   ├── interview.py
-│   │   └── grader.py
+│   │   ├── grader.py
+│   │   └── memory.py            # bộ nhớ dài hạn về người học (Chặng 10)
 │   ├── api/
 │   │   ├── main.py
 │   │   ├── routers/
 │   │   └── errors.py
+│   ├── mcp/                     # Chặng 10
+│   │   ├── server.py            # phơi RAG ra cho Claude Code / IDE khác
+│   │   └── client.py            # app gọi công cụ ngoài
 │   └── db/
 │       ├── models.py            # SQLAlchemy
 │       ├── session.py
@@ -213,6 +239,8 @@ ApphocAIengineering/
 │   ├── Dockerfile
 │   ├── docker-compose.yml
 │   └── runner.Dockerfile        # container chạy pytest bài nộp
+├── deploy/
+│   └── tunnel/                  # cấu hình Cloudflare Tunnel (Chặng 9)
 ├── .github/workflows/ci.yml
 ├── .env.example
 └── pyproject.toml
@@ -299,6 +327,16 @@ class LLMProvider(Protocol):
 Mọi lời gọi LLM đều trả về số token và giá tiền. Không có đường nào gọi LLM mà không ghi
 được chi phí — đây là ràng buộc cố ý, để §11.3 hoạt động.
 
+```python
+# app/core/tracing.py
+class Tracer(Protocol):
+    def span(self, ten: str, *, vao: dict | None = None) -> ContextManager[Span]: ...
+```
+
+`Span` cho phép gắn `ra` và `loi` trước khi đóng. Ba bản cài đặt: `SqliteTracer` (Chặng 9, tự
+viết), `LangfuseTracer` (Chặng 10), `NullTracer` (dùng trong test, không ghi gì). Cùng một bộ
+test contract chạy qua cả ba — đúng cách `VectorStore` đã làm.
+
 ---
 
 ## 7. Mô hình dữ liệu (SQLite)
@@ -311,15 +349,24 @@ Qdrant giữ vector và nội dung chunk. SQLite giữ **trạng thái học t�
 | `quiz_items` | id, document_id, chunk_id, kind (mcq/open), question, choices_json, answer, rubric, topic |
 | `attempts` | id, quiz_item_id, user_answer, score, feedback, answered_at |
 | `review_schedule` | quiz_item_id, ease, interval_days, repetitions, due_at (SM-2) |
-| `interview_sessions` | id, topic, transcript_json, final_score, feedback, started_at, ended_at |
+| `interview_sessions` | id, topic, transcript_json, summary, final_score, feedback, started_at, ended_at |
 | `exercises` | id, slug, title, prompt_md, test_path, rubric_md |
 | `submissions` | id, exercise_id, code, pytest_output, passed, ai_review, score, submitted_at |
 | `llm_calls` | id, feature, model, input_tokens, output_tokens, cost_usd, latency_ms, created_at |
+| `spans` | trace_id, span_id, parent_id, ten, bat_dau, ket_thuc, vao_json, ra_json, loi (Chặng 9) |
+| `ghi_nhan_hoc_vien` | id, noi_dung, topic, nguon_phien, tao_luc, con_hieu_luc (Chặng 10) |
 
 `checksum` trên `documents` cho phép nạp lại chỉ khi tài liệu đổi — quan trọng vì
 `docs/lessons/` sẽ được nạp đi nạp lại liên tục.
 
 `llm_calls` là bảng để trả lời *"tháng này tốn bao nhiêu tiền, tính năng nào tốn nhất"*.
+
+`spans` trả lời câu khác: *"câu hỏi này chậm ở khâu nào, lấy về đoạn tài liệu nào"* — xem §9.8.
+
+`ghi_nhan_hoc_vien` giữ **nhận định về người học**, khác hẳn `review_schedule` vốn giữ *câu hỏi
+nào cần hỏi lại*. Ví dụ một bản ghi: *"hay nhầm giữa embedding và fine-tuning"*. LLM rút ra
+cuối mỗi phiên; phiên sau nạp vài nhận định liên quan vào prompt hệ thống. `con_hieu_luc` cho
+phép xoá tay — bộ nhớ tích luỹ nhận định sai là một kiểu hỏng ngầm, phải có đường sửa.
 
 ---
 
@@ -340,6 +387,9 @@ Qdrant giữ vector và nội dung chunk. SQLite giữ **trạng thái học t�
 | Đóng gói | **Docker + docker-compose** | JD ghi. Cài ở Chặng 4 |
 | CI | **GitHub Actions** | Chạy lint + test mỗi lần push |
 | Log | **structlog** (JSON) | JD ghi "đọc log". Log có cấu trúc mới truy được |
+| Tracing | **tự viết** (Chặng 9) → **Langfuse cloud** (Chặng 10) | Xem §9.8 |
+| Công khai | **Cloudflare Tunnel** | Xem §9.9 |
+| Công cụ | **MCP**, cả server lẫn client | Xem §9.10 |
 
 ### 8.1 Giá DeepSeek (tra ngày 2026-08-08)
 
@@ -442,6 +492,69 @@ chính tài liệu của người học, rồi chọn theo số liệu.
 
 Biến một lựa chọn kỹ thuật thành một thí nghiệm có số đo — đó là công việc thật của AI Engineer.
 
+### 9.8 Tự viết tracing trước, Langfuse sau, và không tự host
+
+Log trả lời *"chuyện gì đã xảy ra"*. Trace trả lời *"chuyện đó xảy ra ở khâu nào, mất bao lâu,
+với đầu vào gì"*. Với chuỗi RAG bốn khâu, khác biệt là giữa bốn dòng JSON rời rạc phải tự ghép
+bằng `request_id`, và một cái cây có thời lượng — nhìn phát ra ngay khâu nào chậm, khâu nào
+lấy nhầm đoạn.
+
+**Chặng 9 tự viết.** Chuỗi RAG là đường thẳng, đúng bốn span, không rẽ nhánh — đủ nhỏ để hiểu
+hết. Một bảng `spans` trong SQLite cộng một trang HTMX vẽ cây, không thêm container nào. Cùng
+lập luận với §9.2: tự viết khi thứ đó còn nhỏ, để sau này nhìn công cụ thật thì biết nó đang
+làm gì thay vì thấy một hộp đen.
+
+**Chặng 10 chuyển sang Langfuse.** Mốc chuyển không tuỳ tiện: trace của agent có công cụ là một
+cây sâu bao nhiêu không biết trước (LLM nghĩ → gọi công cụ → nghĩ lại → gọi tiếp). Trang tự
+viết đủ cho cái thứ nhất và bắt đầu đuối ở cái thứ hai. Đổi công cụ đúng lúc bài toán vượt khỏi
+bản tự viết là câu trả lời phỏng vấn tốt hơn hẳn *"tôi cài Langfuse từ đầu"*.
+
+**Không tự host Langfuse.** Bản tự host cần sáu thành phần — Postgres, ClickHouse, Redis,
+S3/blob, web, worker (tra `langfuse.com/self-hosting` ngày 2026-08-12; tài liệu không công bố
+mức RAM tối thiểu). §3.1 đã ghi RAM 14 GB là điểm chật nhất và không chạy nổi Ollama + Qdrant
++ app + IDE cùng lúc; §15 cũng đã loại Postgres và Redis khỏi phạm vi. Thêm ClickHouse vào là
+mua một vấn đề vận hành mà không đổi lấy bài học nào. Dùng bậc miễn phí của bản cloud: 50k đơn
+vị/tháng, giữ 30 ngày, 2 người dùng (tra `langfuse.com/pricing` cùng ngày) — rộng gấp nhiều
+lần nhu cầu một người. Dữ liệu gửi đi là tài liệu học của chính người dùng, không nhạy cảm.
+
+Cả ba bản đứng sau `Tracer` (§6), nên chọn sai không đắt: đổi là một dòng trong `.env`, và bộ
+test contract chứng minh không hỏng gì.
+
+### 9.9 Công khai qua Cloudflare Tunnel, không thuê máy chủ
+
+§9.6 chọn chạy embedding trên GPU RTX 4060 ở máy nhà, và đó là một bài học thật về VRAM và
+inference. Máy chủ giá rẻ **không có GPU**. Nên "đưa app lên mạng" đụng thẳng vào quyết định
+đó: thuê VPS là phải viết thêm một bản `Embedder` chạy CPU và đo lại độ trễ.
+
+Tunnel né được mâu thuẫn: app vẫn chạy ở nhà, vẫn dùng GPU, nhưng có một URL HTTPS công khai
+trỏ vào. Chi phí 0 đồng. Vẫn học đủ thứ đáng học — Docker Compose ngoài môi trường dev, reverse
+proxy, HTTPS, tên miền, và câu hỏi cổng nào được phơi ra ngoài.
+
+Đánh đổi thật, ghi rõ ở đây chứ không giấu: **tắt máy là link chết.** Giảm thiểu ở §14. Đây
+cũng là lý do §16 vẫn đòi GIF demo trong README chứ không chỉ đòi cái link.
+
+Bản `Embedder` chạy CPU và việc thuê máy chủ không bị cấm — chỉ là không nằm trong 27 tuần.
+Nếu sau này cần link sống 24/7 thì `Embedder` đã là protocol sẵn (§6), thêm bản mới không đụng
+gì tới phần còn lại.
+
+### 9.10 MCP hai chiều, server trước client sau
+
+MCP có hai chiều ngược nhau, dạy hai thứ khác nhau:
+
+- **App làm server** — Claude Code hoặc IDE khác hỏi vào tài liệu của người học. Chỉ là gói
+  lại hàm tìm kiếm đã có từ Chặng 3 theo đúng giao thức. Nhỏ, và ra được một thứ dùng hằng ngày.
+- **App làm client** — app gọi công cụ ngoài (đọc repo GitHub, tìm web). Khi tài liệu đã nạp
+  không trả lời được, thay vì trả *"không tìm thấy trong tài liệu"* (§10), app tự đi tra. Đây
+  mới là phần học chính: vòng lặp tool calling, chọn công cụ nào, biết khi nào dừng, xử lý
+  công cụ trả lỗi.
+
+Làm server trước vì nó cho hiểu giao thức từ phía dễ — chỉ trả lời — rồi mới sang phía khó là
+tự quyết định. Và vì nó ra demo bấm được ngay tuần đầu của Chặng 10.
+
+Ràng buộc bắt buộc cho phía client: **giới hạn cứng số vòng lặp**. Một agent gọi công cụ trong
+vòng lặp không chặn là đường ngắn nhất tới một hoá đơn bất ngờ. Mặc định 8 vòng, đặt trong cấu
+hình, và mọi lần chạm trần đều ghi log.
+
 ---
 
 ## 10. Xử lý lỗi
@@ -456,6 +569,9 @@ Biến một lựa chọn kỹ thuật thành một thí nghiệm có số đo �
 | Qdrant không kết nối được | Kiểm tra lúc khởi động, báo lỗi nêu rõ cần chạy `docker compose up qdrant` |
 | Không tìm được đoạn nào đủ liên quan | Trả lời *"không tìm thấy trong tài liệu"*, **không để LLM tự bịa** |
 | Container chấm bài quá giờ | Giới hạn cứng 30 giây, kill container, báo timeout |
+| Công cụ MCP trả lỗi hoặc quá giờ | Ghi lỗi vào trace, trả kết quả rỗng cho vòng lặp agent, để LLM tự quyết đi tiếp hay dừng |
+| Agent chạm trần số vòng lặp | Dừng, trả lời bằng những gì đã thu được, ghi log rõ là đã chạm trần |
+| Tunnel đứt | App vẫn chạy ở local; `doctor` thêm một mục kiểm tra tunnel để biết link còn sống không |
 
 Toàn bộ lỗi API trả về cùng một hình dạng JSON: `{"error": {"code": ..., "message": ..., "request_id": ...}}`.
 
@@ -502,6 +618,14 @@ Eval **không** chạy trong CI thường (chậm, tốn tiền); chỉ một t�
  "expected_points": ["RAG không sửa trọng số model", "RAG đưa tài liệu vào prompt"],
  "topic": "rag-co-ban"}
 ```
+
+**Kho tài liệu để đo, không chỉ tài liệu của mình.** Bộ vàng xây từ `docs/lessons/` có một điểm
+yếu: người viết câu hỏi cũng chính là người viết tài liệu, nên câu hỏi vô tình dùng đúng từ ngữ
+của đoạn văn và retrieval trông tốt hơn thực tế. Nạp thêm một kho ngoài — `microsoft/AI-For-Beginners`
+hợp vì markdown sạch, tiếng Anh, có thư mục `translations/` nhiều ngôn ngữ — cho phép đo hai
+thứ mà tài liệu nhà không đo được: retrieval trên văn bản mình không viết, và khả năng đa ngôn
+ngữ thật của `multilingual-e5-base`. Nội dung ML cổ điển của kho đó nằm ngoài phạm vi học
+(§2.3); ở đây nó chỉ đóng vai dữ liệu.
 
 ### 12.2 Các chỉ số
 
@@ -566,8 +690,15 @@ Nguyên tắc: **chặng nào cũng kết thúc bằng một app chạy được
 | 6 | ML Evaluation | 16–18 | Recall@k, MRR, faithfulness, LLM-as-judge và cạm bẫy | Báo cáo eval có số liệu |
 | 7 | LangChain + Phỏng vấn | 19–20 | LangChain/LangGraph, agent, tool calling, khi nào KHÔNG nên dùng | Chế độ phỏng vấn thử |
 | 8 | Chấm code + hoàn thiện | 21–22 | Sandbox, pytest trong container, logging có cấu trúc | App hoàn chỉnh + README demo |
+| 9 | Đưa app ra ngoài | 23–24 | Trace và span, tunnel, HTTPS, reverse proxy | URL công khai; mỗi câu hỏi xem được trace |
+| 10 | Agent có công cụ | 25–27 | Tool calling, MCP, vòng lặp agent, bộ nhớ dài hạn | App tra cứu được ra ngoài, và được IDE tra vào |
 
-Tổng: **22 tuần ≈ 5,5 tháng** ở nhịp 10 giờ/tuần (~220 giờ).
+Tổng: **27 tuần ≈ 6,5 tháng** ở nhịp 10 giờ/tuần (~270 giờ).
+
+Chặng 0–8 là lõi bám JD. Chặng 9–10 thêm sau, khi lộ trình gốc đã ra được app chạy được: một
+là để hồ sơ có link bấm được, hai là vì tool calling và MCP năm 2026 đã thành thứ phân biệt
+người gọi API chat với người dựng hệ thống — các sơ đồ kiến trúc ứng dụng AI phổ biến đặt lớp
+công cụ ngang hàng với RAG và LLM.
 
 ### 13.1 Vòng lặp mỗi chặng
 
@@ -580,7 +711,11 @@ Tổng: **22 tuần ≈ 5,5 tháng** ở nhịp 10 giờ/tuần (~220 giờ).
 ### 13.2 Mốc có thể đi xin thực tập
 
 **Sau Chặng 6 (khoảng tuần 18, tháng thứ 4,5)** hồ sơ đã đủ mạnh: app RAG chạy trong Docker,
-có test, có CI, có báo cáo eval kèm số liệu. Chặng 7–8 làm song song trong lúc phỏng vấn.
+có test, có CI, có báo cáo eval kèm số liệu. Chặng 7–10 làm song song trong lúc phỏng vấn.
+
+Nếu muốn một mốc mạnh hơn mà không đợi lâu: Chặng 9 chỉ tốn hai tuần và đổi lại một **URL bấm
+được**. Nhà tuyển dụng mở link nhanh hơn nhiều so với đọc README, nên đảo Chặng 9 lên trước
+Chặng 7–8 là hợp lý nếu lịch phỏng vấn tới sớm.
 
 ### 13.3 Đối chiếu JD
 
@@ -600,6 +735,10 @@ có test, có CI, có báo cáo eval kèm số liệu. Chặng 7–8 làm song s
 
 Phủ 10/10.
 
+Chặng 9–10 nằm ngoài JD, và là cố ý. Tracing là bản nâng cấp trực tiếp của gạch đầu dòng
+"đọc log". Tool calling và MCP thì JD này không ghi — thêm vào là một đặt cược có chủ ý, dựa
+trên chỗ đứng của lớp công cụ trong kiến trúc ứng dụng AI năm 2026, không phải dựa trên JD.
+
 ---
 
 ## 14. Rủi ro
@@ -614,6 +753,11 @@ Phủ 10/10.
 | Bộ eval quá nhỏ nên số liệu vô nghĩa | Trung bình | Tối thiểu 50 mục; đối chứng bằng 10 mục chấm tay |
 | Sa lầy vào tinh chỉnh prompt | Trung bình | Mọi thay đổi prompt phải chứng minh bằng số eval, không sửa theo cảm tính |
 | Lộ khoá API lên GitHub | Cao nếu xảy ra | `.env` vào `.gitignore` từ commit đầu; bật secret scanning; pre-commit chặn |
+| Tắt máy là link công khai chết | Trung bình | README ghi rõ khung giờ máy bật, và luôn kèm GIF demo để link chết vẫn xem được nội dung |
+| App phơi ra mạng bị dò quét | Trung bình | Tunnel chỉ mở đúng một cổng app; bật xác thực của Cloudflare trước khi chia sẻ link rộng |
+| Bộ nhớ dài hạn tích luỹ nhận định sai | Trung bình | Giới hạn số nhận định nạp vào prompt; có nút xoá tay; mỗi bản ghi truy được về phiên gốc |
+| Agent gọi công cụ trong vòng lặp không dừng | Trung bình | Trần cứng 8 vòng (§9.10); mọi lần chạm trần đều ghi log |
+| Langfuse đổi điều kiện bậc miễn phí | Thấp | `Tracer` giữ sẵn bản SQLite tự viết, đổi lại là một dòng `.env` |
 
 ---
 
@@ -626,7 +770,8 @@ Loại bỏ có chủ đích, để dự án hoàn thành được:
 - Chạy code tuỳ ý do người dùng nộp
 - Frontend React/Next.js
 - PostgreSQL, Redis, hàng đợi tác vụ
-- Triển khai lên cloud (có thể làm sau, không nằm trong 22 tuần)
+- Thuê máy chủ trả tiền, Kubernetes, Vercel, Cloudflare Workers. App được công khai qua
+  Cloudflare Tunnel trỏ về máy nhà — xem §9.9
 - Ứng dụng di động, giọng nói
 - Tìm kiếm lai (hybrid BM25 + vector), reranker — cân nhắc bổ sung sau Chặng 6 **nếu** eval
   cho thấy retrieval là điểm nghẽn
@@ -640,7 +785,10 @@ Dự án coi như xong khi tất cả đúng:
 1. `docker compose up` dựng được toàn bộ hệ trên một máy sạch
 2. `pytest` xanh, độ phủ trên `app/core/` từ 80% trở lên
 3. CI xanh trên `main`
-4. Hoàn tất 9 bài học trong `docs/lessons/`, và toàn bộ đã được nạp vào app
+4. Hoàn tất 11 bài học trong `docs/lessons/`, và toàn bộ đã được nạp vào app
 5. Báo cáo eval có số liệu cho cả 4 thí nghiệm ở §12.5
 6. README có ảnh chụp màn hình hoặc GIF demo cả 4 chế độ
-7. Người học **giải thích miệng được** mọi quyết định thiết kế trong tài liệu này
+7. Một câu hỏi bất kỳ xem được trace đầy đủ: từng span, thời lượng, và các đoạn tài liệu đã lấy về
+8. App truy cập được qua URL công khai có HTTPS
+9. Claude Code (hoặc một IDE hỗ trợ MCP) hỏi được vào app; và app gọi được ít nhất một công cụ ngoài
+10. Người học **giải thích miệng được** mọi quyết định thiết kế trong tài liệu này
