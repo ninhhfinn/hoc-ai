@@ -61,8 +61,8 @@ nhớ, đánh đổi một chút độ chính xác) xuống 4-bit thì chỉ c�
 Máy của bạn — RTX 4060 Laptop 8GB VRAM, i5-13500HX, RAM 14GB — hoàn toàn không đủ để train một
 model 7B (thiếu hơn 100GB VRAM), nhưng **thừa sức** để chạy inference cho cả hai model dự án
 này cần: `multilingual-e5-base` dùng để tạo vector cho văn bản (~0.6GB VRAM ở fp16, ~1.1GB ở
-fp32 mặc định) và Qwen2.5-7B đã
-lượng tử hoá 4-bit dùng làm LLM đối chứng chạy local (~5GB VRAM) — cộng lại vẫn còn dư VRAM
+fp32 mặc định) và Qwen2.5-7B đã lượng tử hoá 4-bit dùng làm LLM đối chứng chạy local (~5GB
+VRAM) — cộng lại vẫn còn dư VRAM
 trong ngân sách 8GB. Đây là lý do then chốt: dự án này khả thi trên đúng chiếc laptop bạn đang
 có, vì nó chưa bao giờ định train bất cứ thứ gì.
 
@@ -121,7 +121,9 @@ Máy bạn đang cài sẵn Python 3.14.4 — một phiên bản rất mới —
 Python 3.12. Phải dẹp ngay một hiểu nhầm rất dễ mắc: **không phải vì 3.14 hỏng**. Hai thư viện
 Machine Learning cốt lõi của dự án đều dùng được trên 3.14 — `torch` (PyTorch, thư viện tính
 toán tensor và chạy model) có bản cài sẵn cho 3.14, còn `sentence-transformers` (dùng để chạy
-model embedding) là gói thuần Python nên chưa bao giờ phụ thuộc vào phiên bản Python. (Kiểm
+model embedding) phân phối dạng wheel `py3-none-any` (không gắn với một phiên bản Python cụ thể
+ở tầng file cài đặt), dù bản thân gói vẫn khai báo `requires_python >= 3.10` và phụ thuộc
+`torch`. (Kiểm
 chứng trên PyPI ngày 2026-08-09: `torch` 2.13.0 có bản cài sẵn cho 3.14, và đã có từ bản
 2.9.0. Thói quen nên học ngay từ đây: mọi câu dạng "thư viện X không hỗ trợ Y" đều phải kiểm
 chứng được, kèm ngày kiểm chứng.)
