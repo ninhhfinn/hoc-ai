@@ -80,6 +80,12 @@ def test_docker_khong_bat_buoc_o_chang_0():
     assert docker.bat_buoc is False
 
 
+def test_nvidia_smi_khong_bat_buoc_o_chang_0():
+    bc = chay_kiem_tra()
+    nvidia_smi = next(k for k in bc.ket_qua if k.ten == "nvidia-smi")
+    assert nvidia_smi.bat_buoc is False
+
+
 def test_cau_hinh_hong_thi_bao_cao_chu_khong_nem_loi(monkeypatch):
     """Lenh doctor ton tai de chan doan may hong nen no khong duoc chet vi may hong."""
     monkeypatch.setenv("LLM_PROVIDER", "deepseek")
