@@ -1408,8 +1408,35 @@ rỗng, không test nào truyền vào. Chặng 1 dựng FastAPI dependency sẽ
 có test nạp model. `doctor` đã có sẵn `kiem_tra_lenh` — thêm `kiem_tra_lenh("nvidia-smi",
 bat_buoc=False)` là hợp lý, và Mục 7 bài học đã dạy `nvidia-smi` rồi nên nó khép vòng luôn.
 
-**Nâng version của GitHub Action.** `actions/checkout@v4` (hiện tại là v7) và
-`astral-sh/setup-uv@v5` (hiện tại là v9) đều chậm nhiều major. Vẫn chạy được nên không gấp.
+**Nâng version của GitHub Action — ĐÃ LÀM (N8, PR #4), và làm sai lần đầu.**
+`actions/checkout@v4` và `astral-sh/setup-uv@v5` đều chậm nhiều major.
+
+Câu "(hiện tại là v9)" ở trên **sai**, và nó làm CI chết sau 4 giây:
+`Unable to resolve action astral-sh/setup-uv@v9, unable to find version v9`.
+Sự thật: `astral-sh/setup-uv` ngừng phát hành nhãn major trôi từ sau `v7` — `v8` và
+`v9` đều 404 trên `git/ref/tags`, dù release mới nhất đúng là `v9.0.0`. Hai chuyện
+khác nhau: **số hiệu bản phát hành** và **nhãn trôi có tồn tại hay không**.
+
+Đây là **lần thứ hai** cùng một loại lỗi với defect số 1 ở mục trên: một khẳng định
+về thế giới bên ngoài, không lệnh nào trong plan kiểm chứng, nên nó nằm yên trong tài
+liệu cho tới lúc có thứ chạy thật đâm vào. Lần trước là `torch` và Python 3.14; lần
+này là nhãn action. Quy tắc đã viết ra sau lần trước nhưng **chưa được áp dụng** khi
+viết chính mục này.
+
+Bản vá dùng nhãn đầy đủ `@v7.0.1` và `@v9.0.0` — vừa là thứ duy nhất resolve được,
+vừa khớp nguyên tắc sẵn có của project (ghim Python 3.12, ghim `uv.lock`): một lần
+chạy CI phải lặp lại được. Đánh đổi: không tự nhận bản vá; phải tra định kỳ.
+
+Lệnh kiểm chứng, dùng luôn từ Chặng 1 mỗi khi nâng action:
+
+```bash
+gh api repos/<chu>/<repo>/releases/latest --jq .tag_name      # số bản mới nhất
+gh api repos/<chu>/<repo>/git/ref/tags/<nhan>                 # nhãn có tồn tại không
+```
+
+Và bài học chung: **CI xanh ở máy không chứng minh gì về CI trên runner.** Toàn bộ
+sai lầm này nằm ngoài tầm với của `pytest`, `ruff`, `mypy` — chỉ push lên PR mới lộ.
+Đó là lý do §13.1 bắt mọi thay đổi đi qua branch → PR → merge chứ không dừng ở commit.
 
 **Lỗ còn lại của hàng rào trên CI.** `pre-commit run --all-files` không stage gì, nên
 `chan-env.sh` đọc index rỗng và luôn Passed trên CI. Bảo vệ thật ở CI là `.gitignore` cộng với
