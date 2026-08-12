@@ -5,10 +5,11 @@ os.environ truc tiep. Nho vay moi thiet lap deu co kieu va duoc kiem tra
 ngay luc khoi dong thay vi hong am tham luc chay.
 """
 
+from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import model_validator
+from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,7 +24,7 @@ class Settings(BaseSettings):
 
     # --- LLM ---
     llm_provider: Literal["deepseek", "ollama", "fake"] = "fake"
-    deepseek_api_key: str = ""
+    deepseek_api_key: SecretStr = SecretStr("")
     deepseek_base_url: str = "https://api.deepseek.com"
     deepseek_model: str = "deepseek-v4-flash"
     ollama_base_url: str = "http://localhost:11434"
@@ -51,6 +52,7 @@ class Settings(BaseSettings):
         return self
 
 
+@lru_cache
 def lay_cau_hinh() -> Settings:
     """Tra ve cau hinh doc tu moi truong hien tai."""
     return Settings()

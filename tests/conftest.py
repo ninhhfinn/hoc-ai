@@ -18,6 +18,8 @@ Test nao can mot gia tri cu the thi tu dat lay bang monkeypatch.setenv.
 
 import pytest
 
+from app.core.config import lay_cau_hinh
+
 BIEN_CUA_APP = (
     "LLM_PROVIDER",
     "DEEPSEEK_API_KEY",
@@ -38,6 +40,7 @@ BIEN_CUA_APP = (
 @pytest.fixture(autouse=True)
 def moi_truong_sach(monkeypatch, tmp_path):
     """Test khong duoc phu thuoc file .env hay bien moi truong cua may."""
+    lay_cau_hinh.cache_clear()
     for ten in BIEN_CUA_APP:
         monkeypatch.delenv(ten, raising=False)
     monkeypatch.chdir(tmp_path)
