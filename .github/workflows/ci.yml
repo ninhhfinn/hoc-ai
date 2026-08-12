@@ -41,6 +41,15 @@ jobs:
       - name: Cai phu thuoc dung uv.lock
         run: uv sync --locked
 
+      - name: Kiem tra khong co file .env bi track
+        run: |
+          if git ls-files -z | tr '\0' '\n' \
+             | grep -vE '(^|/)\.env\.example$' \
+             | grep -qE '(^|/)\.env(\.|$)'; then
+            echo "LOI: co file .env bi track trong git"
+            exit 1
+          fi
+
       - name: Kiem tra hang rao chan lo khoa
         run: uv run pre-commit run --all-files
 
