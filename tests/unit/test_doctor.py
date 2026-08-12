@@ -115,3 +115,13 @@ def test_main_lenh_version_in_so_phien_ban(capsys):
     captured = capsys.readouterr()
     assert __version__ in captured.out
     assert ma_thoat == 0
+
+
+def test_main_doctor_voi_cau_hinh_hong_tra_1_khong_nem_loi(monkeypatch, capsys):
+    """Lenh doctor voi cau hinh sai van chay duoc, khong nem exception."""
+    monkeypatch.setenv("LLM_PROVIDER", "deepseek")
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "")
+    ma_thoat = main(["doctor"])
+    captured = capsys.readouterr()
+    assert ma_thoat == 1
+    assert "Cau hinh" in captured.out
